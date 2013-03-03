@@ -19,6 +19,26 @@
 __author__ = 'python-twitter@googlegroups.com'
 __version__ = '0.8.6'
 
+from setuptools import Command
+
+
+class PyTest(Command):
+  user_options = []
+  def initialize_options(self):
+    pass
+  def finalize_options(self):
+    pass
+  def run(self):
+    import sys,subprocess
+    errno = subprocess.call([sys.executable, 'runtests.py', 'twitter_test.py'])
+    raise SystemExit(errno)
+
+class PyTestWithCov(PyTest):
+  def run(self):
+    import sys,subprocess
+    errno = subprocess.call([sys.executable, 'runtests.py', 'twitter_test.py', '--cov-report=html', '--cov=.', '--pdb'])
+    raise SystemExit(errno)
+
 
 # The base package metadata to be used by both distutils and setuptools
 METADATA = dict(
@@ -46,6 +66,10 @@ SETUPTOOLS_METADATA = dict(
     'Topic :: Internet',
   ],
   test_suite = 'twitter_test.suite',
+  cmdclass = {
+    'test': PyTest,
+    'cov': PyTestWithCov,
+  },
 )
 
 
