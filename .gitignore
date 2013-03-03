@@ -23,8 +23,10 @@ develop-eggs
 pip-log.txt
 
 # Unit test / coverage reports
+.cache
 .coverage
 .tox
+htmlcov
 
 # PyCharm data
 .idea
@@ -34,3 +36,10 @@ pip-log.txt
 
 #Mr Developer
 .mr.developer.cfg
+
+*.so
+*.sw?
+*.tmp
+*~
+.DS_Store
+tags

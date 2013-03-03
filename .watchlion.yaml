@@ -1,0 +1,3 @@
+build:
+  py: PYTHONPATH=$GAE_HOME python setup.py cov
+loglevel: info
