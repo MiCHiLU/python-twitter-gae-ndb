@@ -60,6 +60,8 @@ try:
 except ImportError:
   from md5 import md5
 
+from google.appengine.api import urlfetch
+from google.appengine.ext import ndb
 import oauth2 as oauth
 
 
@@ -3893,6 +3895,7 @@ class Api(object):
     if 'errors' in data:
       raise TwitterError(data['errors'])
 
+  @ndb.synctasklet
   def _FetchUrl(self,
                 url,
                 post_data=None,
@@ -3988,10 +3991,16 @@ class Api(object):
       encoded_post_data = self._EncodePostData(post_data)
 
     # Open and return the URL immediately if we're not going to cache
+    url_data = None
+    ctx = ndb.get_context()
     if encoded_post_data or no_cache or not self._cache or not self._cache_timeout:
-      response = opener.open(url, encoded_post_data)
-      url_data = self._DecompressGzippedResponse(response)
-      opener.close()
+      try:
+        response = yield ctx.urlfetch(url, encoded_post_data, method=http_method)
+      except urlfetch.Error as e:
+        print e
+      else:
+        if response.status_code == 200:
+          url_data = response.content
     else:
       # Unique keys are a combination of the url and the oAuth Consumer Key
       if self._consumer_key:
@@ -4005,17 +4014,18 @@ class Api(object):
       # If the cached version is outdated then fetch another and store it
       if not last_cached or time.time() >= last_cached + self._cache_timeout:
         try:
-          response = opener.open(url, encoded_post_data)
-          url_data = self._DecompressGzippedResponse(response)
-          self._cache.Set(key, url_data)
-        except urllib2.HTTPError, e:
+          response = yield ctx.urlfetch(url, encoded_post_data, method=http_method)
+        except urlfetch.Error as e:
           print e
-        opener.close()
+        else:
+          if response.status_code == 200:
+            url_data = responses.content
+            self._cache.Set(key, url_data)
       else:
         url_data = self._cache.Get(key)
 
     # Always return the latest version
-    return url_data
+    raise ndb.Return(url_data)
 
 class _FileCacheError(Exception):
   '''Base exception class for FileCache related errors'''

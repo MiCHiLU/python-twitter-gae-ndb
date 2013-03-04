@@ -28,6 +28,14 @@ import urllib
 
 import twitter
 
+from google.appengine.ext import ndb, testbed
+from minimock import mock, restore
+testbed = testbed.Testbed()
+testbed.activate()
+testbed.init_urlfetch_stub()
+
+mock_responses = {}
+
 class StatusTest(unittest.TestCase):
 
   SAMPLE_JSON = '''{"created_at": "Fri Jan 26 23:17:14 +0000 2007", "id": 4391023, "text": "A l\u00e9gp\u00e1rn\u00e1s haj\u00f3m tele van angoln\u00e1kkal.", "user": {"description": "Canvas. JC Penny. Three ninety-eight.", "id": 718443, "location": "Okinawa, Japan", "name": "Kesuke Miyagi", "profile_image_url": "https://twitter.com/system/user/profile_image/718443/normal/kesuke.png", "screen_name": "kesuke", "url": "https://twitter.com/kesuke"}}'''
@@ -360,6 +368,7 @@ class ApiTest(unittest.TestCase):
                       cache=None)
     api.SetUrllib(self._urllib)
     self._api = api
+    mock("ndb.Context.urlfetch", mock_obj=mock_urlfetch)
 
   def testTwitterError(self):
     '''Test that twitter responses containing an error message are wrapped.'''
@@ -514,7 +523,7 @@ class ApiTest(unittest.TestCase):
     self.assertEqual(89586072, user.status.id)
 
   def _AddHandler(self, url, callback):
-    self._urllib.AddHandler(url, callback)
+    mock_responses[url] = callback
 
   def _GetTestDataPath(self, filename):
     directory = os.path.dirname(os.path.abspath(__file__))
@@ -596,6 +605,31 @@ class MockHTTPBasicAuthHandler(object):
   def add_password(self, realm, uri, user, passwd):
     # TODO(dewitt): Add verification that the proper args are passed
     pass
+
+@ndb.tasklet
+def mock_urlfetch(self, url, payload=None, method='GET', headers={},
+             allow_truncated=False, follow_redirects=True,
+             validate_certificate=None, deadline=None, callback=None):
+  # Remove parameters from URL - they're only added by oauth and we
+  # don't want to test oauth
+  if '?' in url:
+      # We split using & and filter on the beginning of each key
+      # This is crude but we have to keep the ordering for now
+      (url, qs) = url.split('?')
+
+      tokens = [token for token in qs.split('&')
+                if not token.startswith('oauth')]
+
+      if len(tokens) > 0:
+          url = "%s?%s"%(url, '&'.join(tokens))
+
+  if url in mock_responses:
+    class Response(object):
+      content = mock_responses[url]().read()
+      status_code = 200
+    raise ndb.Return(Response())
+  else:
+    raise Exception('Unexpected URL %s (Checked: %s)' % (url, self._handlers))
 
 class curry:
   # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52549
