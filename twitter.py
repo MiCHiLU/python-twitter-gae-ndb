@@ -35,17 +35,7 @@ import urlparse
 import gzip
 import StringIO
 import json
-
-# parse_qsl moved to urlparse module in v2.6
-try:
-  from urlparse import parse_qsl, parse_qs
-except ImportError:
-  from cgi import parse_qsl, parse_qs
-
-try:
-  from hashlib import md5
-except ImportError:
-  from md5 import md5
+import hashlib
 
 from google.appengine.api import urlfetch
 from google.appengine.ext import ndb
@@ -4093,9 +4083,9 @@ class _FileCache(object):
 
   def _GetPath(self,key):
     try:
-        hashed_key = md5(key).hexdigest()
+        hashed_key = hashlib.md5(key).hexdigest()
     except TypeError:
-        hashed_key = md5.new(key).hexdigest()
+        hashed_key = hashlib.md5.new(key).hexdigest()
 
     return os.path.join(self._root_directory,
                         self._GetPrefix(hashed_key),
