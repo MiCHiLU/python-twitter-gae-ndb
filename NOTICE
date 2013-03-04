@@ -3,8 +3,5 @@ NOTICE
 The python-oauth2 library (http://github.com/simplegeo/python-oauth2) is used under the terms of the MIT license and is copyright Leah Culver.
 See http://github.com/simplegeo/python-oauth2/blob/master/LICENSE.txt for details.
 
-The httplib2 library (http://code.google.com/p/httplib2) is used under the terms of the MIT license and is copyright Joe Gregorio.
-See http://code.google.com/p/httplib2/source/browse/python2/httplib2/__init__.py for details.
-
 This code is made available under the Apache License and is copyright the Python-Twitter Developers.
 
