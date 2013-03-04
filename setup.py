@@ -55,7 +55,7 @@ METADATA = dict(
 
 # Extra package metadata to be used only if setuptools is installed
 SETUPTOOLS_METADATA = dict(
-  install_requires = ['setuptools', 'simplejson', 'oauth2'],
+  install_requires = ['setuptools', 'oauth2'],
   include_package_data = True,
   classifiers = [
     'Development Status :: 4 - Beta',
@@ -65,7 +65,7 @@ SETUPTOOLS_METADATA = dict(
     'Topic :: Communications :: Chat',
     'Topic :: Internet',
   ],
-  test_suite = 'twitter_test.suite',
+  test_suite = 'py.test',
   cmdclass = {
     'test': PyTest,
     'cov': PyTestWithCov,
