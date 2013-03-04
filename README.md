@@ -1,6 +1,6 @@
 # Python Twitter
 
-[![Build Status](https://travis-ci.org/MiCHiLU/python-twitter-gae-ndb.png)](https://travis-ci.org/MiCHiLU/python-twitter-gae-ndb)
+[![Build Status](https://travis-ci.org/MiCHiLU/python-twitter-gae-ndb.png?branch=six)](https://travis-ci.org/MiCHiLU/python-twitter-gae-ndb)
 
 **A Python wrapper around the Twitter API.**
 
