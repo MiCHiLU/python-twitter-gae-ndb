@@ -65,7 +65,7 @@ SETUPTOOLS_METADATA = dict(
     'Topic :: Communications :: Chat',
     'Topic :: Internet',
   ],
-  test_suite = 'twitter_test.suite',
+  test_suite = 'py.test',
   cmdclass = {
     'test': PyTest,
     'cov': PyTestWithCov,

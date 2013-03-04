@@ -30,6 +30,7 @@ import twitter
 
 from google.appengine.ext import ndb, testbed
 from minimock import mock, restore
+import pytest
 testbed = testbed.Testbed()
 testbed.activate()
 testbed.init_urlfetch_stub()
@@ -360,13 +361,11 @@ class FileCacheTest(unittest.TestCase):
 class ApiTest(unittest.TestCase):
 
   def setUp(self):
-    self._urllib = MockUrllib()
     api = twitter.Api(consumer_key='CONSUMER_KEY',
                       consumer_secret='CONSUMER_SECRET',
                       access_token_key='OAUTH_TOKEN',
                       access_token_secret='OAUTH_SECRET',
                       cache=None)
-    api.SetUrllib(self._urllib)
     self._api = api
     mock("ndb.Context.urlfetch", mock_obj=mock_urlfetch)
 
@@ -374,14 +373,8 @@ class ApiTest(unittest.TestCase):
     '''Test that twitter responses containing an error message are wrapped.'''
     self._AddHandler('https://api.twitter.com/1/statuses/user_timeline.json',
                      curry(self._OpenTestData, 'public_timeline_error.json'))
-    # Manually try/catch so we can check the exception's value
-    try:
+    with pytest.raises(twitter.TwitterError):
       statuses = self._api.GetUserTimeline()
-    except twitter.TwitterError, error:
-      # If the error message matches, the test passes
-      self.assertEqual('test error', error.message)
-    else:
-      self.fail('TwitterError expected')
 
   def testGetUserTimeline(self):
     '''Test the twitter.Api GetUserTimeline method'''
@@ -536,76 +529,6 @@ class ApiTest(unittest.TestCase):
     # headers are set to {}
     return urllib.addinfo(f, {})
 
-class MockUrllib(object):
-  '''A mock replacement for urllib that hardcodes specific responses.'''
-
-  def __init__(self):
-    self._handlers = {}
-    self.HTTPBasicAuthHandler = MockHTTPBasicAuthHandler
-
-  def AddHandler(self, url, callback):
-    self._handlers[url] = callback
-
-  def build_opener(self, *handlers):
-    return MockOpener(self._handlers)
-
-  def HTTPHandler(self, *args, **kwargs):
-      return None
-
-  def HTTPSHandler(self, *args, **kwargs):
-      return None
-
-  def OpenerDirector(self):
-      return self.build_opener()
-
-  def ProxyHandler(self,*args,**kwargs):
-      return None
-
-class MockOpener(object):
-  '''A mock opener for urllib'''
-
-  def __init__(self, handlers):
-    self._handlers = handlers
-    self._opened = False
-
-  def open(self, url, data=None):
-    if self._opened:
-      raise Exception('MockOpener already opened.')
-
-    # Remove parameters from URL - they're only added by oauth and we
-    # don't want to test oauth
-    if '?' in url:
-        # We split using & and filter on the beginning of each key
-        # This is crude but we have to keep the ordering for now
-        (url, qs) = url.split('?')
-
-        tokens = [token for token in qs.split('&')
-                  if not token.startswith('oauth')]
-
-        if len(tokens) > 0:
-            url = "%s?%s"%(url, '&'.join(tokens))
-
-    if url in self._handlers:
-      self._opened = True
-      return self._handlers[url]()
-    else:
-      raise Exception('Unexpected URL %s (Checked: %s)' % (url, self._handlers))
-
-  def add_handler(self, *args, **kwargs):
-      pass
-
-  def close(self):
-    if not self._opened:
-      raise Exception('MockOpener closed before it was opened.')
-    self._opened = False
-
-class MockHTTPBasicAuthHandler(object):
-  '''A mock replacement for HTTPBasicAuthHandler'''
-
-  def add_password(self, realm, uri, user, passwd):
-    # TODO(dewitt): Add verification that the proper args are passed
-    pass
-
 @ndb.tasklet
 def mock_urlfetch(self, url, payload=None, method='GET', headers={},
              allow_truncated=False, follow_redirects=True,
@@ -623,13 +546,10 @@ def mock_urlfetch(self, url, payload=None, method='GET', headers={},
       if len(tokens) > 0:
           url = "%s?%s"%(url, '&'.join(tokens))
 
-  if url in mock_responses:
-    class Response(object):
-      content = mock_responses[url]().read()
-      status_code = 200
-    raise ndb.Return(Response())
-  else:
-    raise Exception('Unexpected URL %s (Checked: %s)' % (url, self._handlers))
+  class Response(object):
+    content = mock_responses[url]().read()
+    status_code = 200
+  raise ndb.Return(Response())
 
 class curry:
   # http://aspn.activestate.com/ASPN/Cookbook/Python/Recipe/52549
@@ -640,21 +560,10 @@ class curry:
     self.kwargs = kwargs.copy()
 
   def __call__(self, *args, **kwargs):
-    if kwargs and self.kwargs:
-      kw = self.kwargs.copy()
-      kw.update(kwargs)
-    else:
-      kw = kwargs or self.kwargs
+    #if kwargs and self.kwargs:
+    #  kw = self.kwargs.copy()
+    #  kw.update(kwargs)
+    #else:
+    #  kw = kwargs or self.kwargs
+    kw = kwargs or self.kwargs
     return self.fun(*(self.pending + args), **kw)
-
-
-def suite():
-  suite = unittest.TestSuite()
-  suite.addTests(unittest.makeSuite(FileCacheTest))
-  suite.addTests(unittest.makeSuite(StatusTest))
-  suite.addTests(unittest.makeSuite(UserTest))
-  suite.addTests(unittest.makeSuite(ApiTest))
-  return suite
-
-if __name__ == '__main__':
-  unittest.main()

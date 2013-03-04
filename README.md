@@ -43,12 +43,6 @@ With setuptools installed:
 $ python setup.py test
 ```
 
-Without setuptools installed:
-
-```
-$ python twitter_test.py
-```
-
 ## Getting the code
 
 The code is hosted at [Github](https://github.com/bear/python-twitter).
