@@ -4,4 +4,5 @@ python:
 install:
   - curl -O -s http://googleappengine.googlecode.com/files/google_appengine_1.7.5.zip && unzip -q google_appengine_1.7.5.zip
   - pip install .
+  - pip install -r requirements.test.txt
 script: PYTHONPATH=google_appengine:google_appengine/lib/yaml/lib python setup.py test
